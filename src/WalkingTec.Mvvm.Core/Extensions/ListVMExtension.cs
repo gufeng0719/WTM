@@ -1,9 +1,8 @@
-﻿using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
 using System.Text;
+using Microsoft.AspNetCore.Mvc;
 
 namespace WalkingTec.Mvvm.Core.Extensions
 {
@@ -48,10 +47,10 @@ namespace WalkingTec.Mvvm.Core.Extensions
             switch (info.FormatType)
             {
                 case ColumnFormatTypeEnum.Dialog:
-                    rv = vm.UIService.MakeDialogButton(info.ButtonType, info.Url, info.Text, info.Width, info.Height, info.Title, info.ButtonID, info.ShowDialog, info.Resizable).ToString();
+                    rv = vm.UIService.MakeDialogButton(info.ButtonType, info.Url, info.Text, info.Width, info.Height, info.Title, info.ButtonID, info.ShowDialog, info.Resizable, info.Maxed, info.ButtonClass, info.Style).ToString();
                     break;
-                case ColumnFormatTypeEnum.Redirect:
-                    rv = vm.UIService.MakeRedirectButton(info.ButtonType, info.Url, info.Text).ToString();
+                case ColumnFormatTypeEnum.Button:
+                    rv = vm.UIService.MakeButton(info.ButtonType, info.Url, info.Text, info.Width, info.Height, info.Title, info.ButtonID, info.Resizable, info.Maxed, vm.ViewDivId, info.ButtonClass, info.Style, info.RType).ToString();
                     break;
                 case ColumnFormatTypeEnum.Download:
                     if (info.FileID == null)
@@ -60,7 +59,7 @@ namespace WalkingTec.Mvvm.Core.Extensions
                     }
                     else
                     {
-                        rv = vm.UIService.MakeDownloadButton(info.ButtonType, info.FileID.Value, info.Text).ToString();
+                        rv = vm.UIService.MakeDownloadButton(info.ButtonType, info.FileID.Value, info.Text, vm.CurrentCS, info.ButtonClass, info.Style).ToString();
                     }
                     break;
                 case ColumnFormatTypeEnum.ViewPic:
@@ -70,11 +69,11 @@ namespace WalkingTec.Mvvm.Core.Extensions
                     }
                     else
                     {
-                        rv = vm.UIService.MakeViewButton(info.ButtonType, info.FileID.Value, info.Text, info.Width, info.Height, info.Title, info.Resizable).ToString();
+                        rv = vm.UIService.MakeViewButton(info.ButtonType, info.FileID.Value, info.Text, info.Width, info.Height, info.Title, info.Resizable, vm.CurrentCS, info.Maxed, info.ButtonClass, info.Style).ToString();
                     }
                     break;
                 case ColumnFormatTypeEnum.Script:
-                    rv = vm.UIService.MakeScriptButton(info.ButtonType, info.Text, info.Script, info.ButtonID, info.Url).ToString();
+                    rv = vm.UIService.MakeScriptButton(info.ButtonType, info.Text, info.Script, info.ButtonID, info.Url, info.ButtonClass, info.Style).ToString();
                     break;
                 case ColumnFormatTypeEnum.Html:
                     rv = info.Html;
@@ -116,6 +115,7 @@ namespace WalkingTec.Mvvm.Core.Extensions
             {
                 foreach (var col in baseCol.BottomChildren)
                 {
+                    inner = false;
                     if (col.ColumnType != GridColumnTypeEnum.Normal)
                     {
                         continue;
@@ -136,7 +136,7 @@ namespace WalkingTec.Mvvm.Core.Extensions
                     {
                         foreColor = RowColor;
                     }
-                    (string bgcolor, string forecolor) colors = (null,null);
+                    (string bgcolor, string forecolor) colors = (null, null);
                     if (backColor != string.Empty)
                     {
                         colors.bgcolor = backColor;
@@ -145,7 +145,7 @@ namespace WalkingTec.Mvvm.Core.Extensions
                     {
                         colors.forecolor = foreColor;
                     }
-                    if( string.IsNullOrEmpty(colors.bgcolor) == false || string.IsNullOrEmpty(colors.forecolor) == false)
+                    if (string.IsNullOrEmpty(colors.bgcolor) == false || string.IsNullOrEmpty(colors.forecolor) == false)
                     {
                         colorcolumns.Add(col.Field, colors);
                     }
@@ -247,6 +247,11 @@ namespace WalkingTec.Mvvm.Core.Extensions
                                     html = PropertyHelper.GetEnumDisplayName(ptype, enumvalue);
                                 }
                             }
+                            //If this column is a class or list, html will be set to a json string, sest inner to true to remove the "
+                            if(returnColumnObject == true && ptype?.Namespace.Equals("System") == false && ptype?.IsEnumOrNullableEnum() == false)
+                            {
+                                inner = true;
+                            }
                         }
                     }
                     else
@@ -271,7 +276,7 @@ namespace WalkingTec.Mvvm.Core.Extensions
                     }
                     if (string.IsNullOrEmpty(self.DetailGridPrix) == false && addHiddenID == false)
                     {
-                        html += $@"<input hidden name=""{self.DetailGridPrix}[{index}].ID"" value=""{sou.ID}""/>";
+                        html += $@"<input hidden name='{self.DetailGridPrix}[{index}].ID' value='{sou.GetID()}'/>";
                         addHiddenID = true;
                     }
                     if (inner == false)
@@ -285,7 +290,7 @@ namespace WalkingTec.Mvvm.Core.Extensions
             sb.Append($"\"TempIsSelected\":\"{ (isSelected == true ? "1" : "0") }\"");
             foreach (var cc in colorcolumns)
             {
-                if(string.IsNullOrEmpty(cc.Value.Item1) == false)
+                if (string.IsNullOrEmpty(cc.Value.Item1) == false)
                 {
                     string bg = cc.Value.Item1;
                     if (bg.StartsWith("#") == false)
@@ -306,7 +311,7 @@ namespace WalkingTec.Mvvm.Core.Extensions
             }
             if (containsID == false)
             {
-                sb.Append($",\"ID\":\"{sou.ID}\"");
+                sb.Append($",\"ID\":\"{(sou as dynamic).ID}\"");
             }
             // 标识当前行数据是否被选中
             sb.Append($@",""LAY_CHECKED"":{sou.Checked.ToString().ToLower()}");
@@ -315,9 +320,41 @@ namespace WalkingTec.Mvvm.Core.Extensions
             return sb.ToString();
         }
 
-        public static string GetJson<T>(this IBasePagedListVM<T, BaseSearcher> self) where T : TopBasePoco, new()
+        /// <summary>
+        /// Get json format string of ListVM's search result
+        /// </summary>
+        /// <typeparam name="T">Model type</typeparam>
+        /// <param name="self">a listvm</param>
+        /// <param name="PlainText">true to return plain text, false to return formated html, such as checkbox,buttons ...</param>
+        /// <returns>json string</returns>
+        public static string GetJson<T>(this IBasePagedListVM<T, BaseSearcher> self, bool PlainText = true) where T : TopBasePoco, new()
         {
-            return $@"{{""Data"":{self.GetDataJson(true)},""Count"":{self.Searcher.Count},""Page"":{self.Searcher.Page},""PageCount"":{self.Searcher.PageCount}}}";
+            return $@"{{""Data"":{self.GetDataJson(PlainText)},""Count"":{self.Searcher.Count},""Page"":{self.Searcher.Page},""PageCount"":{self.Searcher.PageCount},""Msg"":""success"",""Code"":200}}";
+        }
+
+        public static string GetError<T>(this IBasePagedListVM<T, BaseSearcher> self) where T : TopBasePoco, new()
+        {
+            return $@"{{""Data"":{{}},""Count"":0,""Page"":0,""PageCount"":0,""Msg"":""{(self as BaseVM).MSD.GetFirstError()}"",""Code"":400}}";
+        }
+
+
+        /// <summary>
+        /// 生成下载文件
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="self"></param>
+        /// <param name="ExportName"></param>
+        /// <returns></returns>
+        public static FileContentResult GetExportData<T>(this IBasePagedListVM<T, BaseSearcher> self, string ExportName = "") where T : TopBasePoco, new()
+        {
+            self.SearcherMode = self.Ids != null && self.Ids.Count > 0 ? ListVMSearchModeEnum.CheckExport : ListVMSearchModeEnum.Export;
+            var data = self.GenerateExcel();
+            string ContentType = self.ExportExcelCount > 1 ? "application/x-zip-compresse" : "application/vnd.ms-excel";
+            ExportName = string.IsNullOrEmpty(ExportName) ? typeof(T).Name : ExportName;
+            ExportName = self.ExportExcelCount > 1 ? $"Export_{ExportName}_{DateTime.Now.ToString("yyyyMMddHHmmssffff")}.zip" : $"Export_{ExportName}_{DateTime.Now.ToString("yyyyMMddHHmmssffff")}.xlsx";
+            FileContentResult Result = new FileContentResult(data, ContentType);
+            Result.FileDownloadName = ExportName;
+            return Result;
         }
     }
 }

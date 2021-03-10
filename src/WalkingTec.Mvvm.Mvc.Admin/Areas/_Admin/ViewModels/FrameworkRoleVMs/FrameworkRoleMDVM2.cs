@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
@@ -39,18 +39,40 @@ namespace WalkingTec.Mvvm.Mvc.Admin.ViewModels.FrameworkRoleVMs
 
             foreach (var item in data2)
             {
+                if (item.Name?.StartsWith("MenuKey.") == true)
+                {
+                    if (Core.Program._Callerlocalizer[item.Name].ResourceNotFound == true)
+                    {
+                        item.Name = Core.Program._localizer[item.Name];
+                    }
+                    else
+                    {
+                        item.Name = Core.Program._Callerlocalizer[item.Name];
+                    }
+                }
                 if (item.AllActions == null)
                 {
                     item.AllActions = new List<ComboSelectListItem>();
                 }
-                item.AllActions.Insert(0, new ComboSelectListItem { Text = "主页面", Value = item.ID.ToString() });
-                var ids = item.AllActions.Select(x => Guid.Parse(x.Value));
+                foreach (var act in item.AllActions)
+                {
+                    if (Core.Program._Callerlocalizer[act.Text].ResourceNotFound == true)
+                    {
+                        act.Text = Core.Program._localizer[act.Text];
+                    }
+                    else
+                    {
+                        act.Text = Core.Program._Callerlocalizer[act.Text];
+                    }
+                }
+                item.AllActions.Insert(0, new ComboSelectListItem { Text = Program._localizer["MainPage"], Value = item.ID.ToString() });
+                var ids = item.AllActions.Select(x => Guid.Parse(x.Value.ToString()));
                 item.Actions = ids.Where(x => allowedids.Contains(x)).ToList();
             }
             Pages = data2;
         }
 
-        public bool DoChange()
+        public async Task<bool> DoChangeAsync()
         {
             List<Guid> AllowedMenuIds = new List<Guid>();
             var torem = AllowedMenuIds.Distinct();
@@ -85,7 +107,9 @@ namespace WalkingTec.Mvvm.Mvc.Admin.ViewModels.FrameworkRoleVMs
                 fp.Allowed = true;
                 DC.Set<FunctionPrivilege>().Add(fp);
             }
-            DC.SaveChanges();
+            await DC.SaveChangesAsync();
+            var userids = DC.Set<FrameworkUserRole>().Where(x => x.RoleId == Entity.ID).Select(x => x.UserId.ToString()).ToArray();
+            await LoginUserInfo.RemoveUserCache(userids);
             return true;
         }
 

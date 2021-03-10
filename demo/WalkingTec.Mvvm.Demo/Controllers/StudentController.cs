@@ -3,33 +3,41 @@ using Microsoft.AspNetCore.Mvc;
 using System;
 using WalkingTec.Mvvm.Core;
 using WalkingTec.Mvvm.Mvc;
+using WalkingTec.Mvvm.Core.Extensions;
 using WalkingTec.Mvvm.Demo.ViewModels.StudentVMs;
 
 namespace WalkingTec.Mvvm.Demo.Controllers
 {
     
-    [ActionDescription("学生管理（多对多）")]
-    public class StudentController : BaseController
+    [ActionDescription("学生管理")]
+    public partial class StudentController : BaseController
     {
-        #region 搜索
-        [ActionDescription("搜索")]
+        #region Search
+        [ActionDescription("Search")]
         public ActionResult Index()
         {
             var vm = CreateVM<StudentListVM>();
             return PartialView(vm);
         }
-        [ActionDescription("搜索（多列表）")]
-        public ActionResult Index2()
+
+        [ActionDescription("Search")]
+        [HttpPost]
+        public string Search(StudentListVM vm)
         {
-            var vm = CreateVM<StudentSearchVM>();
-            vm.ValidList.Searcher.IsValid = true;
-            vm.InValidList.Searcher.IsValid = false;
-            return PartialView(vm);
+            if (ModelState.IsValid)
+            {
+                return vm.GetJson(false);
+            }
+            else
+            {
+                return vm.GetError();
+            }
         }
+
         #endregion
 
-        #region 新建
-        [ActionDescription("新建")]
+        #region Create
+        [ActionDescription("Create")]
         public ActionResult Create()
         {
             var vm = CreateVM<StudentVM>();
@@ -37,7 +45,7 @@ namespace WalkingTec.Mvvm.Demo.Controllers
         }
 
         [HttpPost]
-        [ActionDescription("新建")]
+        [ActionDescription("Create")]
         public ActionResult Create(StudentVM vm)
         {
             if (!ModelState.IsValid)
@@ -54,22 +62,23 @@ namespace WalkingTec.Mvvm.Demo.Controllers
                 }
                 else
                 {
-                    return FFResult().CloseDialog().RefreshGrid(index: 0).CloseDialog().RefreshGrid(index: 1);
+                    return FFResult().CloseDialog().RefreshGrid();
                 }
             }
         }
         #endregion
 
-        #region 修改
-        [ActionDescription("修改")]
-        public ActionResult Edit(Guid id)
+        #region Edit
+        [ActionDescription("Edit")]
+        public ActionResult Edit(string id)
         {
             var vm = CreateVM<StudentVM>(id);
             return PartialView(vm);
         }
 
-        [ActionDescription("修改")]
+        [ActionDescription("Edit")]
         [HttpPost]
+        [ValidateFormItemOnly]
         public ActionResult Edit(StudentVM vm)
         {
             if (!ModelState.IsValid)
@@ -92,17 +101,17 @@ namespace WalkingTec.Mvvm.Demo.Controllers
         }
         #endregion
 
-        #region 删除
-        [ActionDescription("删除")]
-        public ActionResult Delete(Guid id)
+        #region Delete
+        [ActionDescription("Delete")]
+        public ActionResult Delete(string id)
         {
             var vm = CreateVM<StudentVM>(id);
             return PartialView(vm);
         }
 
-        [ActionDescription("删除")]
+        [ActionDescription("Delete")]
         [HttpPost]
-        public ActionResult Delete(Guid id, IFormCollection nouse)
+        public ActionResult Delete(string id, IFormCollection nouse)
         {
             var vm = CreateVM<StudentVM>(id);
             vm.DoDelete();
@@ -117,26 +126,26 @@ namespace WalkingTec.Mvvm.Demo.Controllers
         }
         #endregion
 
-        #region 详细
-        [ActionDescription("详细")]
-        public ActionResult Details(Guid id)
+        #region Details
+        [ActionDescription("Details")]
+        public ActionResult Details(string id)
         {
             var vm = CreateVM<StudentVM>(id);
             return PartialView(vm);
         }
         #endregion
 
-        #region 批量修改
+        #region BatchEdit
         [HttpPost]
-        [ActionDescription("批量修改")]
-        public ActionResult BatchEdit(Guid[] IDs)
+        [ActionDescription("BatchEdit")]
+        public ActionResult BatchEdit(string[] IDs)
         {
             var vm = CreateVM<StudentBatchVM>(Ids: IDs);
             return PartialView(vm);
         }
 
         [HttpPost]
-        [ActionDescription("批量修改")]
+        [ActionDescription("BatchEdit")]
         public ActionResult DoBatchEdit(StudentBatchVM vm, IFormCollection nouse)
         {
             if (!ModelState.IsValid || !vm.DoBatchEdit())
@@ -145,22 +154,22 @@ namespace WalkingTec.Mvvm.Demo.Controllers
             }
             else
             {
-                return FFResult().RefreshGrid().CloseDialog().Alert("操作成功，共有"+vm.Ids.Length+"条数据被修改");
+                return FFResult().CloseDialog().RefreshGrid().Alert(WalkingTec.Mvvm.Core.Program._localizer?["OprationSuccess"]);
             }
         }
         #endregion
 
-        #region 批量删除
+        #region BatchDelete
         [HttpPost]
-        [ActionDescription("批量删除")]
-        public ActionResult BatchDelete(Guid[] IDs)
+        [ActionDescription("BatchDelete")]
+        public ActionResult BatchDelete(string[] IDs)
         {
             var vm = CreateVM<StudentBatchVM>(Ids: IDs);
             return PartialView(vm);
         }
 
         [HttpPost]
-        [ActionDescription("批量删除")]
+        [ActionDescription("BatchDelete")]
         public ActionResult DoBatchDelete(StudentBatchVM vm, IFormCollection nouse)
         {
             if (!ModelState.IsValid || !vm.DoBatchDelete())
@@ -169,13 +178,13 @@ namespace WalkingTec.Mvvm.Demo.Controllers
             }
             else
             {
-                return FFResult().RefreshGrid().CloseDialog().Alert("操作成功，共有"+vm.Ids.Length+"条数据被删除");
+                return FFResult().CloseDialog().RefreshGrid().Alert(WalkingTec.Mvvm.Core.Program._localizer?["OprationSuccess"]);
             }
         }
         #endregion
 
-        #region 导入
-		[ActionDescription("导入")]
+        #region Import
+		[ActionDescription("Import")]
         public ActionResult Import()
         {
             var vm = CreateVM<StudentImportVM>();
@@ -183,7 +192,7 @@ namespace WalkingTec.Mvvm.Demo.Controllers
         }
 
         [HttpPost]
-        [ActionDescription("导入")]
+        [ActionDescription("Import")]
         public ActionResult Import(StudentImportVM vm, IFormCollection nouse)
         {
             if (vm.ErrorListVM.EntityList.Count > 0 || !vm.BatchSaveData())
@@ -192,9 +201,17 @@ namespace WalkingTec.Mvvm.Demo.Controllers
             }
             else
             {
-                return FFResult().RefreshGrid().CloseDialog().Alert("成功导入 " + vm.EntityList.Count.ToString() + " 行数据");
+                return FFResult().CloseDialog().RefreshGrid().Alert(WalkingTec.Mvvm.Core.Program._localizer["ImportSuccess", vm.EntityList.Count.ToString()]);
             }
         }
         #endregion
+
+        [ActionDescription("Export")]
+        [HttpPost]
+        public IActionResult ExportExcel(StudentListVM vm)
+        {
+            return vm.GetExportData();
+        }
+
     }
 }

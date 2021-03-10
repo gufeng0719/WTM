@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using WalkingTec.Mvvm.Core.Exceptions;
 
 namespace WalkingTec.Mvvm.Mvc
@@ -16,11 +16,18 @@ namespace WalkingTec.Mvvm.Mvc
             return self;
         }
 
-        public static FResult Alert(this FResult self, string msg)
+        public static FResult Alert(this FResult self, string msg, string title = null)
         {
-            self.ContentBuilder.Append($"ff.Alert('{msg}');");
+            self.ContentBuilder.Append($"ff.Alert('{msg}','{title??Program._localizer["Info"]}');");
             return self;
         }
+
+        public static FResult Message(this FResult self, string msg, string title = null)
+        {
+            self.ContentBuilder.Append($"ff.Msg('{msg}','{title??Program._localizer["Info"]}');");
+            return self;
+        }
+
 
         public static FResult RefreshGrid(this FResult self, string winId = "", int index = 0)
         {
@@ -29,7 +36,7 @@ namespace WalkingTec.Mvvm.Mvc
                 winId = self.Controller.ParentWindowId;
                 if (string.IsNullOrEmpty(winId))
                 {
-                    winId = "DONOTUSE_MAINPANEL";
+                    winId = "LAY_app_body";
                 }
             }
             self.ContentBuilder.Append($"ff.RefreshGrid('{winId}',{index});");
@@ -49,6 +56,17 @@ namespace WalkingTec.Mvvm.Mvc
             return self;
         }
 
+        public static FResult RefreshGridRow(this FResult self, string id, string winId = "")
+        {
+            self.RefreshGrid(winId);
+            return self;
+        }
+
+        public static FResult RefreshGridRow(this FResult self, long id, string winId = "")
+        {
+            self.RefreshGrid(winId);
+            return self;
+        }
         /// <summary>
         /// 刷新页面
         /// </summary>

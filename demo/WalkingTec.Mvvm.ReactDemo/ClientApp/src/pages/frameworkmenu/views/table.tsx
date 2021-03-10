@@ -1,20 +1,30 @@
-﻿import { ColDef, ColGroupDef } from 'ag-grid-community';
+import { ColDef, ColGroupDef } from 'ag-grid-community';
 import { Icon } from 'antd';
 import { AgGrid } from 'components/dataView';
+import { mergeLocales } from 'locale';
 import React from 'react';
-import RequestFiles from 'utils/RequestFiles';
 import Store from '../store';
 import Action from './action';
+mergeLocales({
+    "zh-CN": {
+        'frameworkmenu.DisplayOrder': '顺序',
+        'frameworkmenu.ICon': '图标',
+    },
+    "en-US": {
+        'frameworkmenu.DisplayOrder': 'DisplayOrder',
+        'frameworkmenu.ICon': 'ICon',
+    }
+});
 // 列配置
 const columnDefs: (ColDef | ColGroupDef)[] = [
     // {
     //     headerName: "页面名称", field: "PageName"
     // },
     {
-        headerName: "顺序", field: "DisplayOrder",
+        headerName: "frameworkmenu.DisplayOrder", field: "DisplayOrder",
     },
     {
-        headerName: "图标", field: "ICon", cellRenderer: "renderIcon"
+        headerName: "frameworkmenu.ICon", field: "ICon", cellRenderer: "renderIcon"
     },
 ]
 /**
@@ -41,14 +51,9 @@ export default class extends React.Component<any, any> {
             frameworkComponents={{
                 // 注册一个 图标渲染组件
                 renderIcon: ({ value, data }) => {
-                    if (value) {
+                    if (data.ICon) {
                         return <div  >
-                            <img style={{ height: 20, width: 20, objectFit: "cover" }} src={RequestFiles.onFileDownload(value)} alt="" />
-                        </div>
-                    }
-                    if (data.CustomICon) {
-                        return <div  >
-                            <Icon type={data.CustomICon} style={{ fontSize: 20 }} />
+                            <Icon type={data.ICon} style={{ fontSize: 20 }} />
                         </div>
                     }
                     return null

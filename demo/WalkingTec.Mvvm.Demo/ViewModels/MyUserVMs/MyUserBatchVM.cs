@@ -10,7 +10,7 @@ using WalkingTec.Mvvm.Demo.Models;
 
 namespace WalkingTec.Mvvm.Demo.ViewModels.MyUserVMs
 {
-    public class MyUserBatchVM : BaseBatchVM<MyUser, MyUser_BatchEdit>
+    public partial class MyUserBatchVM : BaseBatchVM<MyUser, MyUser_BatchEdit>
     {
         public MyUserBatchVM()
         {
@@ -18,11 +18,6 @@ namespace WalkingTec.Mvvm.Demo.ViewModels.MyUserVMs
             LinkedVM = new MyUser_BatchEdit();
         }
 
-        protected override bool CheckIfCanDelete(Guid id, out string errorMessage)
-        {
-            errorMessage = null;
-			return true;
-        }
     }
 
 	/// <summary>

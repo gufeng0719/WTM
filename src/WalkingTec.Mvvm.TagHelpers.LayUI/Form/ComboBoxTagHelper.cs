@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using System.Collections;
 using System.Collections.Generic;
@@ -33,7 +33,7 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
         public string TriggerUrl { get; set; }
 
         /// <summary>
-        /// 是否多选 
+        /// 是否多选
         /// 默认根据Field 绑定的值类型进行判断。Array or List 即多选，否则单选
         /// 注意：多选与搜索不能同时启用
         /// </summary>
@@ -55,7 +55,11 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
 
         public ComboBoxTagHelper()
         {
-            EmptyText = "请选择";
+            if (EmptyText == null)
+            {
+                EmptyText = Program._localizer["PleaseSelect"];
+            }
+            EnableSearch = GlobalServices.GetRequiredService<Configs>().UiOptions.ComboBox.DefaultEnableSearch;
         }
 
         public override void Process(TagHelperContext context, TagHelperOutput output)
@@ -65,6 +69,12 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
             output.Attributes.Add("name", Field.Name);
             output.Attributes.Add("lay-filter", Field.Name);
             output.Attributes.Add("wtm-name", Field.Name);
+            output.Attributes.Add("wtm-ctype", "combo");
+            if (Disabled == true)
+            {
+                output.Attributes.Add("disabled", "disabled");
+
+            }
 
             if (MultiSelect == null)
             {
@@ -87,11 +97,23 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
             {
                 output.Attributes.Add("lay-verify", MultiSelect.Value ? "selectRequired" : "required");
             }
-
-            var contentBuilder = new StringBuilder();
-            if (string.IsNullOrEmpty(EmptyText) == false && Disabled == false)
+            if (string.IsNullOrEmpty(ChangeFunc) == false)
             {
-                contentBuilder.Append($"<option value=''>{EmptyText}</option>");
+                output.Attributes.Add("wtm-cf", FormatFuncName(ChangeFunc, false));
+            }
+            if (LinkField != null)
+            {
+                output.Attributes.Add("wtm-linkto", $"{Core.Utils.GetIdByName(LinkField.ModelExplorer.Container.ModelType.Name + "." + LinkField.Name)}");
+                output.Attributes.Add("wtm-tname", $"{LinkField.Name}");
+            }
+            if (TriggerUrl != null)
+            {
+                output.Attributes.Add("wtm-turl", TriggerUrl);
+            }
+            var contentBuilder = new StringBuilder();
+            if (string.IsNullOrEmpty(EmptyText) == false)
+            {
+                contentBuilder.Append($"<option value=''>{(Disabled == true ? "" : EmptyText)}</option>");
             }
 
             #region 添加下拉数据 并 设置默认选中
@@ -109,38 +131,54 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
 
                 if (checktype.IsEnumOrNullableEnum())
                 {
-                    listItems = checktype.ToListItems(Field.Model);
+                    listItems = checktype.ToListItems(DefaultValue?? Field.Model);
                 }
                 else if (checktype == typeof(bool) || checktype == typeof(bool?))
                 {
-                    listItems = Utils.GetBoolCombo(BoolComboTypes.Custom, (bool?)Field.Model, YesText, NoText);
+                    bool? df = null;
+                    if(bool.TryParse(DefaultValue ?? "",out bool test) == true)
+                    {
+                        df = test;
+                    }
+                    listItems = Utils.GetBoolCombo(BoolComboTypes.Custom,df ?? (bool?)Field.Model, YesText, NoText);
                 }
             }
             else // 添加用户设置的设置源
             {
                 var selectVal = new List<string>();
-                if (Field.Model != null)
+                if (DefaultValue == null)
                 {
-                    if (modeltype.IsArray || (modeltype.IsGenericType && typeof(List<>).IsAssignableFrom(modeltype.GetGenericTypeDefinition())))
+                    if (Field.Model != null)
                     {
-                        foreach (var item in Field.Model as dynamic)
+                        if (modeltype.IsArray || (modeltype.IsGenericType && typeof(List<>).IsAssignableFrom(modeltype.GetGenericTypeDefinition())))
                         {
-                            selectVal.Add(item.ToString().ToLower());
+                            foreach (var item in Field.Model as dynamic)
+                            {
+                                selectVal.Add(item.ToString().ToLower());
+                            }
+                        }
+                        else
+                        {
+                            selectVal.Add(Field.Model.ToString().ToLower());
                         }
                     }
-                    else
-                    {
-                        selectVal.Add(Field.Model.ToString().ToLower());
-                    }
+                }
+                else
+                {
+                    selectVal.AddRange(DefaultValue.Split(',').Select(x=>x.ToLower()));
                 }
                 if (Items.Metadata.ModelType == typeof(List<ComboSelectListItem>))
                 {
                     listItems = Items.Model as List<ComboSelectListItem>;
                     foreach (var item in listItems)
                     {
-                        if (selectVal.Contains(item.Value?.ToLower()))
+                        if (selectVal.Contains(item.Value?.ToString().ToLower()))
                         {
                             item.Selected = true;
+                        }
+                        else
+                        {
+                            item.Selected = false;
                         }
                     }
                 }
@@ -163,29 +201,31 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
             {
                 foreach (var item in listItems)
                 {
-                    contentBuilder.Append($"<option value='{item.Value}'>{item.Text}</option>");
+                    contentBuilder.Append($"<option value='{item.Value}'{(string.IsNullOrEmpty(item.ICon) ? string.Empty : $" icon='{item.ICon}'")}>{item.Text}</option>");
                 }
 
                 // 添加默认选中项
-                var inputHidBuilder = new StringBuilder();
-                foreach (var item in listItems.Where(x => x.Selected).ToList())
-                {
-                    inputHidBuilder.Append($"<input name='{Field.Name}' value='{item.Value}' text='{item.Text}' hidden/>");
-                }
-                output.PostContent.AppendHtml(inputHidBuilder.ToString());
+                var selected = listItems.Where(x => x.Selected).ToList();
+                var mulvalues = selected.ToSpratedString(x => x.Value, seperator: "`");
+                var mulnamess = selected.ToSpratedString(x => x.Text, seperator: "`");
+                output.Attributes.Add("wtm-combovalue", $"{mulvalues}");
+                output.Attributes.Add("wtm-comboname", $"{mulnamess}");
             }
-            else
+            else // 添加用户设置的设置源
             {
                 foreach (var item in listItems)
                 {
                     if (item.Selected == true)
                     {
-                        contentBuilder.Append($"<option value='{item.Value}' selected>{item.Text}</option>");
+                        if (Disabled == true)
+                        {
+                            output.PostElement.AppendHtml($"<input name='{Field.Name}' value='{item.Value}' text='{item.Text}' type='hidden' />");
+                        }
+                        contentBuilder.Append($"<option value='{item.Value}'{(string.IsNullOrEmpty(item.ICon) ? string.Empty : $" icon='{item.ICon}'")} selected>{item.Text}</option>");
                     }
                     else
                     {
-                        contentBuilder.Append($"<option value='{item.Value}' {(Disabled ? "disabled=\"\"" : string.Empty)}>{item.Text}</option>");
-
+                        contentBuilder.Append($"<option value='{item.Value}'{(string.IsNullOrEmpty(item.ICon) ? string.Empty : $" icon='{item.ICon}'")} {(Disabled && listItems.Count > 1 && Field.Model != null ? "disabled=\"\"" : string.Empty)}>{item.Text}</option>");
                     }
                 }
             }

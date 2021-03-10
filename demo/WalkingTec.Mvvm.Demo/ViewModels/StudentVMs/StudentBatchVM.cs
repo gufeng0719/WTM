@@ -10,7 +10,7 @@ using WalkingTec.Mvvm.Demo.Models;
 
 namespace WalkingTec.Mvvm.Demo.ViewModels.StudentVMs
 {
-    public class StudentBatchVM : BaseBatchVM<Student, Student_BatchEdit>
+    public partial class StudentBatchVM : BaseBatchVM<Student, Student_BatchEdit>
     {
         public StudentBatchVM()
         {
@@ -18,20 +18,13 @@ namespace WalkingTec.Mvvm.Demo.ViewModels.StudentVMs
             LinkedVM = new Student_BatchEdit();
         }
 
-        protected override bool CheckIfCanDelete(Guid id, out string errorMessage)
-        {
-            errorMessage = null;
-			return true;
-        }
     }
 
 	/// <summary>
-    /// 批量编辑字段类
+    /// Class to define batch edit fields
     /// </summary>
     public class Student_BatchEdit : BaseVM
     {
-        [Display(Name = "密码")]
-        public String Password { get; set; }
 
         protected override void InitVM()
         {

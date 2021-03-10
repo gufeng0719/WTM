@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System;
 using WalkingTec.Mvvm.Core;
 using WalkingTec.Mvvm.Mvc;
+using WalkingTec.Mvvm.Core.Extensions;
 using $vmnamespace$;
 
 namespace $namespace$
@@ -11,17 +12,32 @@ namespace $namespace$
     [ActionDescription("$des$")]
     public partial class $modelname$Controller : BaseController
     {
-        #region 搜索
-        [ActionDescription("搜索")]
+        #region Search
+        [ActionDescription("Search")]
         public ActionResult Index()
         {
             var vm = CreateVM<$modelname$ListVM>();
             return PartialView(vm);
         }
+
+        [ActionDescription("Search")]
+        [HttpPost]
+        public string Search($modelname$ListVM vm)
+        {
+            if (ModelState.IsValid)
+            {
+                return vm.GetJson(false);
+            }
+            else
+            {
+                return vm.GetError();
+            }
+        }
+
         #endregion
 
-        #region 新建
-        [ActionDescription("新建")]
+        #region Create
+        [ActionDescription("Create")]
         public ActionResult Create()
         {
             var vm = CreateVM<$modelname$VM>();
@@ -29,7 +45,7 @@ namespace $namespace$
         }
 
         [HttpPost]
-        [ActionDescription("新建")]
+        [ActionDescription("Create")]
         public ActionResult Create($modelname$VM vm)
         {
             if (!ModelState.IsValid)
@@ -52,15 +68,15 @@ namespace $namespace$
         }
         #endregion
 
-        #region 修改
-        [ActionDescription("修改")]
-        public ActionResult Edit(Guid id)
+        #region Edit
+        [ActionDescription("Edit")]
+        public ActionResult Edit(string id)
         {
             var vm = CreateVM<$modelname$VM>(id);
             return PartialView(vm);
         }
 
-        [ActionDescription("修改")]
+        [ActionDescription("Edit")]
         [HttpPost]
         [ValidateFormItemOnly]
         public ActionResult Edit($modelname$VM vm)
@@ -85,17 +101,17 @@ namespace $namespace$
         }
         #endregion
 
-        #region 删除
-        [ActionDescription("删除")]
-        public ActionResult Delete(Guid id)
+        #region Delete
+        [ActionDescription("Delete")]
+        public ActionResult Delete(string id)
         {
             var vm = CreateVM<$modelname$VM>(id);
             return PartialView(vm);
         }
 
-        [ActionDescription("删除")]
+        [ActionDescription("Delete")]
         [HttpPost]
-        public ActionResult Delete(Guid id, IFormCollection nouse)
+        public ActionResult Delete(string id, IFormCollection nouse)
         {
             var vm = CreateVM<$modelname$VM>(id);
             vm.DoDelete();
@@ -110,26 +126,26 @@ namespace $namespace$
         }
         #endregion
 
-        #region 详细
-        [ActionDescription("详细")]
-        public ActionResult Details(Guid id)
+        #region Details
+        [ActionDescription("Details")]
+        public ActionResult Details(string id)
         {
             var vm = CreateVM<$modelname$VM>(id);
             return PartialView(vm);
         }
         #endregion
 
-        #region 批量修改
+        #region BatchEdit
         [HttpPost]
-        [ActionDescription("批量修改")]
-        public ActionResult BatchEdit(Guid[] IDs)
+        [ActionDescription("BatchEdit")]
+        public ActionResult BatchEdit(string[] IDs)
         {
             var vm = CreateVM<$modelname$BatchVM>(Ids: IDs);
             return PartialView(vm);
         }
 
         [HttpPost]
-        [ActionDescription("批量修改")]
+        [ActionDescription("BatchEdit")]
         public ActionResult DoBatchEdit($modelname$BatchVM vm, IFormCollection nouse)
         {
             if (!ModelState.IsValid || !vm.DoBatchEdit())
@@ -138,22 +154,22 @@ namespace $namespace$
             }
             else
             {
-                return FFResult().RefreshGrid().CloseDialog().Alert("操作成功，共有"+vm.Ids.Length+"条数据被修改");
+                return FFResult().CloseDialog().RefreshGrid().Alert(WalkingTec.Mvvm.Core.Program._localizer?["OprationSuccess"]);
             }
         }
         #endregion
 
-        #region 批量删除
+        #region BatchDelete
         [HttpPost]
-        [ActionDescription("批量删除")]
-        public ActionResult BatchDelete(Guid[] IDs)
+        [ActionDescription("BatchDelete")]
+        public ActionResult BatchDelete(string[] IDs)
         {
             var vm = CreateVM<$modelname$BatchVM>(Ids: IDs);
             return PartialView(vm);
         }
 
         [HttpPost]
-        [ActionDescription("批量删除")]
+        [ActionDescription("BatchDelete")]
         public ActionResult DoBatchDelete($modelname$BatchVM vm, IFormCollection nouse)
         {
             if (!ModelState.IsValid || !vm.DoBatchDelete())
@@ -162,13 +178,13 @@ namespace $namespace$
             }
             else
             {
-                return FFResult().RefreshGrid().CloseDialog().Alert("操作成功，共有"+vm.Ids.Length+"条数据被删除");
+                return FFResult().CloseDialog().RefreshGrid().Alert(WalkingTec.Mvvm.Core.Program._localizer?["OprationSuccess"]);
             }
         }
         #endregion
 
-        #region 导入
-		[ActionDescription("导入")]
+        #region Import
+		[ActionDescription("Import")]
         public ActionResult Import()
         {
             var vm = CreateVM<$modelname$ImportVM>();
@@ -176,7 +192,7 @@ namespace $namespace$
         }
 
         [HttpPost]
-        [ActionDescription("导入")]
+        [ActionDescription("Import")]
         public ActionResult Import($modelname$ImportVM vm, IFormCollection nouse)
         {
             if (vm.ErrorListVM.EntityList.Count > 0 || !vm.BatchSaveData())
@@ -185,9 +201,17 @@ namespace $namespace$
             }
             else
             {
-                return FFResult().RefreshGrid().CloseDialog().Alert("成功导入 " + vm.EntityList.Count.ToString() + " 行数据");
+                return FFResult().CloseDialog().RefreshGrid().Alert(WalkingTec.Mvvm.Core.Program._localizer["ImportSuccess", vm.EntityList.Count.ToString()]);
             }
         }
         #endregion
+
+        [ActionDescription("Export")]
+        [HttpPost]
+        public IActionResult ExportExcel($modelname$ListVM vm)
+        {
+            return vm.GetExportData();
+        }
+
     }
 }

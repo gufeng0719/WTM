@@ -1,5 +1,6 @@
-﻿@model $vmnamespace$.$modelname$ListVM
+@model $vmnamespace$.$modelname$ListVM
+@inject IStringLocalizer<WalkingTec.Mvvm.Core.Program> Localizer;
 
 <wt:searchpanel vm="@Model" reset-btn="true">$fields$
 </wt:searchpanel>
-<wt:grid vm="@Model" />
+<wt:grid vm="@Model" url="$searchurl$"/>

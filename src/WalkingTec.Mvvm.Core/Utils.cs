@@ -1,4 +1,5 @@
-﻿using NPOI.HSSF.Util;
+using Microsoft.Extensions.Caching.Distributed;
+using NPOI.HSSF.Util;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -10,6 +11,8 @@ using System.Runtime.Loader;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using WalkingTec.Mvvm.Core.Extensions;
+using WalkingTec.Mvvm.Core.Support;
 
 namespace WalkingTec.Mvvm.Core
 {
@@ -35,12 +38,23 @@ namespace WalkingTec.Mvvm.Core
             var dir = new DirectoryInfo(Path.GetDirectoryName(path));
 
             var dlls = dir.GetFiles("*.dll", SearchOption.AllDirectories);
-            
+            string[] systemdll = new string[]
+            {
+                "Microsoft.",
+                "System.",
+                "Swashbuckle.",
+                "ICSharpCode",
+                "Newtonsoft.",
+                "Oracle.",
+                "Pomelo.",
+                "SQLitePCLRaw."
+            };
+
             foreach (var dll in dlls)
             {
                 try
                 {
-                    if (dll.Name.StartsWith("Microsoft.") == false)
+                    if (systemdll.Any(x => dll.Name.StartsWith(x)) == false)
                     {
                         rv.Add(AssemblyLoadContext.Default.LoadFromAssemblyPath(dll.FullName));
                     }
@@ -52,13 +66,18 @@ namespace WalkingTec.Mvvm.Core
 
         public static FrameworkMenu FindMenu(string url)
         {
+            if(url == null)
+            {
+                return null;
+            }
+            url = url.ToLower();
             var menus = GlobalServices.GetRequiredService<GlobalData>()?.AllMenus;
             if(menus == null)
             {
                 return null;
             }
             //寻找菜单中是否有与当前判断的url完全相同的
-            var menu = menus.Where(x => x.Url != null && x.Url.ToLower() == url.ToLower()).FirstOrDefault();
+            var menu = menus.Where(x => x.Url != null && x.Url.ToLower() == url).FirstOrDefault();
 
             //如果没有，抹掉当前url的参数，用不带参数的url比对
             if (menu == null)
@@ -67,20 +86,20 @@ namespace WalkingTec.Mvvm.Core
                 if (pos > 0)
                 {
                     url = url.Substring(0, pos);
-                    menu = menus.Where(x => x.Url != null && x.Url.ToLower() == url.ToLower()).FirstOrDefault();
+                    menu = menus.Where(x => x.Url != null && (x.Url.ToLower() == url || x.Url.ToLower()+"async" == url)).FirstOrDefault();
                 }
             }
 
             //如果还没找到，则判断url是否为/controller/action/id这种格式，如果是则抹掉/id之后再对比
-            if (menu == null)
+            if (menu == null && url.EndsWith("/index"))
             {
-                var split = url.Split('/');
-                if (split.Length >= 2 && Guid.TryParse(split.Last(), out Guid longTest))
-                {
-                    var pos = url.LastIndexOf("/");
-                    url = url.Substring(0, pos);
-                    menu = menus.Where(x => x.Url != null && x.Url.ToLower() == url.ToLower()).FirstOrDefault();
-                }
+                url = url.Substring(0, url.Length - 6);
+                menu = menus.Where(x => x.Url != null && x.Url.ToLower() == url).FirstOrDefault();
+            }
+            if (menu == null && url.EndsWith("/indexasync"))
+            {
+                url = url.Substring(0, url.Length - 11);
+                menu = menus.Where(x => x.Url != null && x.Url.ToLower() == url).FirstOrDefault();
             }
             return menu;
         }
@@ -102,7 +121,7 @@ namespace WalkingTec.Mvvm.Core
                 bool exist = false;
                 foreach (var newItem in newList)
                 {
-                    if (oldItem.ID == newItem.ID)
+                    if (oldItem.GetID().ToString() == newItem.GetID().ToString())
                     {
                         exist = true;
                         break;
@@ -118,7 +137,7 @@ namespace WalkingTec.Mvvm.Core
                 bool exist = false;
                 foreach (var oldItem in oldList)
                 {
-                    if (newItem.ID == oldItem.ID)
+                    if (newItem.GetID().ToString() == oldItem.GetID().ToString())
                     {
                         exist = true;
                         break;
@@ -194,24 +213,24 @@ namespace WalkingTec.Mvvm.Core
             switch (boolType)
             {
                 case BoolComboTypes.YesNo:
-                    yesText = "是";
-                    noText = "否";
+                    yesText = Program._localizer["Yes"];
+                    noText = Program._localizer["No"];
                     break;
                 case BoolComboTypes.ValidInvalid:
-                    yesText = "有效";
-                    noText = "无效";
+                    yesText = Program._localizer["Valid"];
+                    noText = Program._localizer["Invalid"];
                     break;
                 case BoolComboTypes.MaleFemale:
-                    yesText = "男";
-                    noText = "女";
+                    yesText = Program._localizer["Male"];
+                    noText = Program._localizer["Female"];
                     break;
                 case BoolComboTypes.HaveNotHave:
-                    yesText = "有";
-                    noText = "无";
+                    yesText = Program._localizer["Have"];
+                    noText = Program._localizer["NotHave"];
                     break;
                 case BoolComboTypes.Custom:
-                    yesText = trueText ?? "是";
-                    noText = falseText ?? "否";
+                    yesText = trueText ?? Program._localizer["Yes"];
+                    noText = falseText ?? Program._localizer["No"];
                     break;
                 default:
                     break;
@@ -687,14 +706,28 @@ namespace WalkingTec.Mvvm.Core
         }
         #endregion
 
-        public static string GetNugetVersion()
+        public static string GetNugetVersion(string start = null, bool pre = false)
         {
-            string v = APIHelper.CallAPI("https://api.nuget.org/v3-flatcontainer/walkingtec.mvvm.mvc/index.json").Result;
-            var i = v.LastIndexOf("\"");
-            v = v.Substring(0, i);
-            i = v.LastIndexOf("\"");
-            v = v.Substring(i+1);
-            return v;
+            var Cache = GlobalServices.GetRequiredService<IDistributedCache>() as IDistributedCache;
+            if (Cache.TryGetValue("nugetversion", out NugetInfo rv) == false || rv == null)
+            {
+                NugetInfo v = APIHelper.CallAPI<NugetInfo>($"https://api-v2v3search-0.nuget.org/query?q=WalkingTec.Mvvm.Mvc&prerelease={pre.ToString().ToLower()}").Result;
+                var data = v;
+                    Cache.Add("nugetversion", data, new DistributedCacheEntryOptions()
+                    {
+                        SlidingExpiration = new TimeSpan(0, 0, 36000)
+                    });
+                rv = data;
+            }
+
+            if (string.IsNullOrEmpty(start))
+            {
+                return rv.data[0]?.version;
+            }
+            else
+            {
+                return rv.data[0].versions.Select(x => x.version).Where(x => x.StartsWith(start)).Last();
+            }
         }
     }
 }

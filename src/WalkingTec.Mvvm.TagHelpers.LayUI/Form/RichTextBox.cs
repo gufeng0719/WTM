@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.Razor.TagHelpers;
+using Microsoft.AspNetCore.Razor.TagHelpers;
 using System;
 using System.Collections.Generic;
 using System.Text;
 using WalkingTec.Mvvm.Core;
+using WalkingTec.Mvvm.Core.Extensions;
 
 namespace WalkingTec.Mvvm.TagHelpers.LayUI.Form
 {
@@ -11,6 +12,9 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI.Form
     {
         public string EmptyText { get; set; }
         public string UploadUrl { get; set; }
+
+        public new int? Height { get; set; }
+        public string ConnectionString { get; set; }
 
         public override void Process(TagHelperContext context, TagHelperOutput output)
         {
@@ -33,25 +37,34 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI.Form
             {
                 url = "/_framework/UploadForLayUIRichTextBox";
             }
-            if (context.Items.ContainsKey("model") == true)
+
+            if (string.IsNullOrEmpty(ConnectionString) == true)
             {
-                var bvm = context.Items["model"] as BaseVM;
-                if(bvm?.CurrentCS != null)
+                if (context.Items.ContainsKey("model") == true)
                 {
-                    url += $"?_DONOT_USE_CS={bvm.CurrentCS}";
+                    var bvm = context.Items["model"] as BaseVM;
+                    if (bvm?.CurrentCS != null)
+                    {
+                        url = url.AppendQuery($"_DONOT_USE_CS={bvm.CurrentCS}");
+                    }
                 }
             }
+            else
+            {
+                url = url.AppendQuery($"_DONOT_USE_CS={ConnectionString}");
+            }
+
 
             output.PostElement.AppendHtml($@"
 <script>
 layui.use('layedit', function(){{
   var layedit = layui.layedit;
-layedit.set({{
-  uploadImage: {{
-    url: '{url}'
-  }}
-}});
-  var index = layedit.build('{Id}'); 
+  layedit.set({{
+    uploadImage: {{
+      url: '{url}'
+    }}
+  }});
+  var index = layedit.build('{Id}'{(Height.HasValue?$",{{height:{Height.Value}}}":"")});
   $('#{Id}').attr('layeditindex',index);
 }});
 </script>

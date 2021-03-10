@@ -5,22 +5,26 @@
  * @modify date 2018-07-24 05:02:33
  * @desc [description]
  */
-import { LocaleProvider } from 'antd';
-import zhCN from 'antd/lib/locale-provider/zh_CN';
+import { ConfigProvider } from 'antd';
+import GlobalConfig from 'global.config';
+import { getConfigProvider, getLocales } from 'locale';
 import { observer } from 'mobx-react';
 import * as React from 'react';
+import { IntlProvider } from 'react-intl';
 import { BrowserRouter } from 'react-router-dom';
 import routes from './router';
 @observer
-export default class RootRoutes extends React.Component<any, any> {
-    render() {
+export default class App extends React.Component<any> {
+    public render() {
+        const { language } = GlobalConfig;
         return (
-            <LocaleProvider locale={zhCN}>
-                <BrowserRouter >
-                    {routes}
-                </BrowserRouter>
-            </LocaleProvider>
+            <ConfigProvider locale={getConfigProvider(language)}>
+                <IntlProvider locale={language} messages={getLocales(language)}>
+                    <BrowserRouter >
+                        {routes}
+                    </BrowserRouter>
+                </IntlProvider>
+            </ConfigProvider>
         );
     }
-
 }

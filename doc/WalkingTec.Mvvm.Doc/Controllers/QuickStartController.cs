@@ -1,15 +1,12 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using WalkingTec.Mvvm.Core;
 using WalkingTec.Mvvm.Mvc;
 
 namespace WalkingTec.Mvvm.Doc.Controllers
 {
-    [ActionDescription("快速开始")]
-    [Public]
+    [AllowAnonymous]
+    [ActionDescription("QuickStart")]
     public class QuickStartController : BaseController
     {
         [ActionDescription("介绍")]
@@ -19,13 +16,13 @@ namespace WalkingTec.Mvvm.Doc.Controllers
         }
 
 
-        [ActionDescription("第一个项目")]
+        [ActionDescription("FirstProject")]
         public IActionResult FirstProject()
         {
             return PartialView();
         }
 
-        [ActionDescription("第一个模块")]
+        [ActionDescription("FirstModule")]
         public IActionResult FirstModule()
         {
             return PartialView();
@@ -43,7 +40,7 @@ namespace WalkingTec.Mvvm.Doc.Controllers
             return PartialView();
         }
 
-        [ActionDescription("自定义用户")]
+        [ActionDescription("CustomUser")]
         public IActionResult CustomUser()
         {
             return PartialView();

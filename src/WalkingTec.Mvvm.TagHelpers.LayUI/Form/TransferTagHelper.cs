@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -55,12 +55,12 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
         /// <summary>
         /// 没有数据时的文案
         /// </summary>
-        public string NonePlaceholder { get; set; } = "无数据";
+        public string NonePlaceholder { get; set; } = Program._localizer["NoData"];
 
         /// <summary>
         /// 搜索无匹配数据时的文案
         /// </summary>
-        public string SearchNonePlaceholder { get; set; } = "无匹配数据";
+        public string SearchNonePlaceholder { get; set; } = Program._localizer["NoMatchingData"];
 
         /// <summary>
         /// 当数据在左右穿梭时触发，回调返回当前被穿梭的数据
@@ -126,56 +126,56 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
                 DefaultValue = $"[{string.Join(",", selectVal)}]";
             }
 
-            var title = $"['{(string.IsNullOrEmpty(LeftTitle) ? "待选择" : LeftTitle)}','{(string.IsNullOrEmpty(RightTitle) ? "选择的" : RightTitle)}']";
+            var title = $"['{(string.IsNullOrEmpty(LeftTitle) ? Program._localizer["ForSelect"] : LeftTitle)}','{(string.IsNullOrEmpty(RightTitle) ? Program._localizer["Selected"] : RightTitle)}']";
 
             var content = $@"
 <script>
-;!function(){{
-    var $ = layui.$;
-    var transfer = layui.transfer;
-    var name = '{Field.Name}';
-    var _id = '{_idPrefix}{Id}';
-    var container = $('#'+_id);
-    function defaultFunc(data,index,transferIns) {{
-        var selectVals = transfer.getData('{Id}');
-        // remove old values
-        var inputs = $('#'+_id+' input[name='+name+']')
-        if(inputs!=null && inputs.length>0){{
-            for (var i = 0; i < inputs.length; i++) {{
-                inputs[i].remove();
-            }}
-        }}
-        // add new values
-        for (var i = 0; i < selectVals.length; i++) {{
-            container.append('<input type=""hidden"" name=""'+name+'"" value=""'+selectVals[i].value+'""/>');
-        }}
+layui.use(['transfer'],function(){{
+  var $ = layui.$;
+  var transfer = layui.transfer;
+  var name = '{Field.Name}';
+  var _id = '{_idPrefix}{Id}';
+  var container = $('#'+_id);
+  function defaultFunc(data,index,transferIns) {{
+    var selectVals = transfer.getData('{Id}');
+    /* remove old values */
+    var inputs = $('#'+_id+' input[name=""'+name+'""]')
+    if(inputs!=null && inputs.length>0){{
+      for (var i = 0; i < inputs.length; i++) {{
+        inputs[i].remove();
+      }}
     }}
-    var defaultVal = {(string.IsNullOrEmpty(DefaultValue) ? "[]" : DefaultValue)};
-    var transferIns = transfer.render({{
-        elem: '#'+_id
-        ,title:{title}
-        ,data:{JsonConvert.SerializeObject(data, _jsonSerializerSettings)}
-        {(string.IsNullOrEmpty(DefaultValue) ? string.Empty : $",value:defaultVal")}
-        ,id:'{Id}'
-        ,text:{{none:'{NonePlaceholder}',searchNone:'{SearchNonePlaceholder}'}}
-        {(!EnableSearch ? string.Empty : ",showSearch:true")}
-        {(!Width.HasValue ? string.Empty : $",width:{Width}")}
-        {(!Height.HasValue ? string.Empty : $",height:{Height}")}
-        ,onchange: function(data,index){{defaultFunc(data,index,transferIns);
-        {(string.IsNullOrEmpty(ChangeFunc) ? string.Empty : $"{ChangeFunc}(data, index,transferIns);")}
-        }}
-    }});
-    // init default value
-    if(defaultVal!=null && defaultVal.length>0){{
-        for (var i = 0; i < defaultVal.length; i++) {{
-            container.append('<input type=""hidden"" name=""'+name+'"" value=""'+defaultVal[i]+'""/>');
-        }}
+    /* add new values */
+    for (var i = 0; i < selectVals.length; i++) {{
+      container.append('<input type=""hidden"" name=""'+name+'"" value=""'+selectVals[i].value+'""/>');
     }}
-    {(!Disabled?string.Empty: $@"
-        $('#'+_id).find(':checkbox').prop('disabled',true)
-        $('#'+_id).find(':input').prop('disabled',true)
-        transfer.render();")}
-}}();
+  }}
+  var defaultVal = {(string.IsNullOrEmpty(DefaultValue) ? "[]" : DefaultValue)};
+  var transferIns = transfer.render({{
+    elem: '#'+_id
+    ,title:{title}
+    ,data:{JsonConvert.SerializeObject(data, _jsonSerializerSettings)}
+    {(string.IsNullOrEmpty(DefaultValue) ? string.Empty : $",value:defaultVal")}
+    ,id:'{Id}'
+    ,text:{{none:'{NonePlaceholder}',searchNone:'{SearchNonePlaceholder}'}}
+    {(!EnableSearch ? string.Empty : ",showSearch:true")}
+    {(!Width.HasValue ? string.Empty : $",width:{Width}")}
+    {(!Height.HasValue ? string.Empty : $",height:{Height}")}
+    ,onchange: function(data,index){{defaultFunc(data,index,transferIns);
+    {(string.IsNullOrEmpty(ChangeFunc) ? string.Empty : $"{ChangeFunc}(data, index,transferIns);")}
+    }}
+  }});
+  /* init default value */
+  if(defaultVal!=null && defaultVal.length>0){{
+    for (var i = 0; i < defaultVal.length; i++) {{
+      container.append('<input type=""hidden"" name=""'+name+'"" value=""'+defaultVal[i]+'""/>');
+    }}
+  }}
+  {(!Disabled?string.Empty: $@"
+    $('#'+_id).find(':checkbox').prop('disabled',true)
+    $('#'+_id).find(':input').prop('disabled',true)
+    transfer.render();")}
+}})
 </script>
 ";
             output.PostElement.AppendHtml(content);

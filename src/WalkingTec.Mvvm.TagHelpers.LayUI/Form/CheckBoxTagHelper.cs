@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.ViewFeatures;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Razor.TagHelpers;
 using System.Collections;
 using System.Collections.Generic;
@@ -36,14 +36,13 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
 
         public override void Process(TagHelperContext context, TagHelperOutput output)
         {
-            output.TagName = "input";
-            output.TagMode = TagMode.StartTagOnly;
-            output.Attributes.Add("type", "checkbox");
-            output.Attributes.Add("name", Field.Name);
-
             var modelType = Field.Metadata.ModelType;
             var listitems = new List<ComboSelectListItem>();
-
+            List<string> values = null;
+            if(DefaultValue != null)
+            {
+                values = DefaultValue.Split(',').ToList();
+            }
             var middleTable = modelType.GetCustomAttributes(typeof(MiddleTableAttribute), false).FirstOrDefault();
             //如果指向多对多中间表
             if(middleTable != null)
@@ -58,7 +57,7 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
                     if (innerType.IsEnumOrNullableEnum())
                     {
                         listitems = innerType.ToListItems();
-                        SetSelected(listitems, Field.Model as IList);
+                        SetSelected(listitems, values ?? Field.Model as IList);
                     }
                 }
                 else if (modelType.IsBoolOrNullableBool())
@@ -84,12 +83,27 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
                         });
                     }
                 }
-                SetSelected(listitems, Field.Model as IList);
+                List<string> checkvalue = null;
+                if (Field.Model is IList == false && Field.Model != null)
+                {
+                    checkvalue = new List<string> { Field.Model.ToString() };
+                    SetSelected(listitems, values ?? checkvalue);
+                }
+                else
+                {
+                    SetSelected(listitems, values ?? Field.Model as IList);
+                }
             }
 
             output.TagName = "div";
             output.TagMode = TagMode.StartTagAndEndTag;
             output.Attributes.Clear();
+            output.Attributes.Add("div-for", "checkbox");
+            output.Attributes.Add("wtm-ctype", "checkbox");
+            if (string.IsNullOrEmpty(ChangeFunc) == false)
+            {
+                output.Attributes.Add("wtm-cf", FormatFuncName(ChangeFunc, false));
+            }
             for (int i = 0; i < listitems.Count; i++)
             {
                 var item = listitems[i];
@@ -118,16 +132,26 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
                 {
                     if (textAndValue == true)
                     {
-                        if (item.Value.ToLower() == (item2 as ComboSelectListItem).Value.ToLower())
+                        if (item.Value.ToString().ToLower() == (item2 as ComboSelectListItem).Value.ToString().ToLower())
                         {
                             item.Selected = true;
+                            break;
+                        }
+                        else
+                        {
+                            item.Selected = false;
                         }
                     }
                     else
                     {
-                        if (item.Value.ToLower() == item2?.ToString().ToLower())
+                        if (item.Value.ToString().ToLower() == item2?.ToString().ToLower())
                         {
                             item.Selected = true;
+                            break;
+                        }
+                        else
+                        {
+                            item.Selected = false;
                         }
                     }
                 }

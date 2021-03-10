@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace WalkingTec.Mvvm.Core
@@ -9,32 +9,39 @@ namespace WalkingTec.Mvvm.Core
     [Table("FrameworkDomains")]
     public class FrameworkDomain : BasePoco
     {
-        [StringLength(50,ErrorMessage ="{0}最多输入{1}个字符")]
-        [Display(Name = "域名称")]
-        [Required(ErrorMessage ="{0}是必填项")]
-        public string DomainName { get; set; }
+        [StringLength(50,ErrorMessage ="{0}stringmax{1}")]
+        [Display(Name = "DomainName")]
+        [Required(ErrorMessage ="{0}required")]
+        [Column("DomainName")]
+        public string Name { get; set; }
 
-        [StringLength(50,ErrorMessage ="{0}最多输入{1}个字符")]
-        [Required(ErrorMessage ="{0}是必填项")]
-        [Display(Name = "地址" )]
-        public string DomainAddress { get; set; }
+        [StringLength(50,ErrorMessage ="{0}stringmax{1}")]
+        [Required(ErrorMessage ="{0}required")]
+        [Display(Name = "Address")]
+        [Column("DomainAddress")]
+        public string Address { get; set; }
 
-        [Display(Name = "端口" )]
+        [Display(Name = "Port")]
         [Range(1, 65535,ErrorMessage="{0}必须是{1}到{2}之间的整数")]
-        public int? DomainPort { get; set; }
+        [Column("DomainPort")]
+        public int? Port { get; set; }
 
-        [Display(Name = "入口" )]
+        [Display(Name = "EntryUrl")]
         public string EntryUrl { get; set; }
 
         [NotMapped]
-        public string Address
+        public string Url
         {
             get
             {
-                var rv = "http://" + DomainAddress;
-                if (DomainPort != null)
+                var rv = Address;
+                if(rv.ToLower().StartsWith("http://") == false && rv.ToLower().StartsWith("https://") == false)
                 {
-                    rv += ":" + DomainPort;
+                    rv = "http://" + rv;
+                }
+                if (Port != null)
+                {
+                    rv += ":" + Port;
                 }
                 return rv;
             }

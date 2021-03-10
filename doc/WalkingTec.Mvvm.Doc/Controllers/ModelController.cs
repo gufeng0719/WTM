@@ -1,31 +1,34 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using WalkingTec.Mvvm.Core;
 using WalkingTec.Mvvm.Mvc;
 
 namespace WalkingTec.Mvvm.Doc.Controllers
 {
-    [Public]
-    [ActionDescription("模型层")]
+    [AllowAnonymous]
+    [ActionDescription("ModelLayer")]
     public class ModelController : BaseController
     {
-        [ActionDescription("创建模型")]
+        [ActionDescription("CreateModel")]
         public IActionResult Poco()
         {
             return PartialView();
         }
 
-        [ActionDescription("模型属性")]
+        [ActionDescription("Att")]
         public IActionResult Att()
         {
             return PartialView();
         }
 
-        [ActionDescription("内置模型")]
+        [ActionDescription("BuildInModel")]
         public IActionResult BuildIn()
+        {
+            return PartialView();
+        }
+
+        [ActionDescription("CustomKey")]
+        public IActionResult CustomKey()
         {
             return PartialView();
         }

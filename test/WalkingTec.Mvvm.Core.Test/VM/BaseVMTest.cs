@@ -1,9 +1,10 @@
-﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using WalkingTec.Mvvm.Core.Support.Json;
 
 namespace WalkingTec.Mvvm.Core.Test.VM
 {
@@ -15,28 +16,10 @@ namespace WalkingTec.Mvvm.Core.Test.VM
         public BaseVMTest()
         {
             _vm = new BaseVM();
-        }
-
-        [TestMethod]
-        [DataTestMethod]
-        [DataRow("test1", ActionLogTypesEnum.Debug)]
-        [DataRow("test2", ActionLogTypesEnum.Normal)]
-        [DataRow("test3", ActionLogTypesEnum.Exception)]
-        public void DoLog(string msg, ActionLogTypesEnum logType)
-        {
-            _vm.Log = new ActionLog();
-            _vm.DC = new DataContext("dologdb"+logType, DBTypeEnum.Memory);
-            _vm.DoLog(msg, logType);
-
-            using (var context = new DataContext("dologdb" + logType, DBTypeEnum.Memory))
-            {
-                var logs = context.Set<ActionLog>().ToList();
-                Assert.AreEqual(1, logs.Count());
-                Assert.AreEqual(msg, logs[0].Remark);
-                Assert.AreEqual(logType, logs[0].LogType);
-                Assert.IsTrue(DateTime.Now.Subtract(logs[0].ActionTime).Seconds < 10);
-            }
-
+            Mock<IServiceProvider> mockService = new Mock<IServiceProvider>();
+            mockService.Setup(x => x.GetService(typeof(GlobalData))).Returns(new GlobalData());
+            mockService.Setup(x => x.GetService(typeof(Configs))).Returns(new Configs());
+            GlobalServices.SetServiceProvider(mockService.Object);
         }
 
         [TestMethod]

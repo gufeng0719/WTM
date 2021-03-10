@@ -1,4 +1,4 @@
-﻿namespace WalkingTec.Mvvm.Core
+namespace WalkingTec.Mvvm.Core
 {
     /// <summary>
     /// 列表操作列类型
@@ -6,7 +6,7 @@
     public enum ColumnFormatTypeEnum
     {
         Dialog,//弹出窗口
-        Redirect,//转向
+        Button,//按钮
         Download,//下载
         ViewPic,//查看图片
         Script,//脚本
@@ -26,17 +26,17 @@
     /// <summary>
     /// 数据库类型
     /// </summary>
-    public enum DBTypeEnum { SqlServer, MySql, PgSql,Memory }
+    public enum DBTypeEnum { SqlServer, MySql, PgSql, Memory, SQLite, Oracle }
 
     /// <summary>
     /// 页面显示方式
     /// </summary>
-    public enum PageModeEnum { Single, Tab}
+    public enum PageModeEnum { Single, Tab }
 
     /// <summary>
     /// Tab页的显示方式
     /// </summary>
-    public enum TabModeEnum { Default, Simple}
+    public enum TabModeEnum { Default, Simple }
 
     /// <summary>
     /// Notification出现的位置
@@ -78,6 +78,18 @@
     };
 
     /// <summary>
+    /// 按钮
+    /// </summary>
+    public enum RedirectTypesEnum
+    {
+        Layer,
+        Self,
+        NewWindow,
+        NewTab,
+    };
+
+
+    /// <summary>
     /// 按钮类型
     /// </summary>
     public enum ButtonOperationEnum
@@ -106,10 +118,31 @@
     /// </summary>
     public enum DateTimeTypeEnum
     {
+        /// <summary>
+        /// 日期选择器
+        /// 可选择：年、月、日
+        /// </summary>
         Date,
-        Time,
-        DateAndTime,
-        Month
+        /// <summary>
+        /// 日期时间选择器
+        /// 可选择：年、月、日、时、分、秒
+        /// </summary>
+        DateTime,
+        /// <summary>
+        /// 年选择器
+        /// 只提供年列表选择
+        /// </summary>
+        Year,
+        /// <summary>
+        /// 年月选择器
+        /// 只提供年、月选择
+        /// </summary>
+        Month,
+        /// <summary>
+        /// 时间选择器
+        /// 只提供时、分、秒选择
+        /// </summary>
+        Time
     };
 
     /// <summary>
@@ -148,10 +181,7 @@
     }
 
     public enum UIEnum
-    {
-        extjs,
-        bootstrap
-    }
+    { LayUI, React, VUE }
 
     public enum NoRightEnum
     {

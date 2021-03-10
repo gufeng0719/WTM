@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Razor.TagHelpers;
+using Microsoft.AspNetCore.Razor.TagHelpers;
 
 namespace WalkingTec.Mvvm.TagHelpers.LayUI
 {
@@ -9,9 +9,12 @@ namespace WalkingTec.Mvvm.TagHelpers.LayUI
         {
             if (string.IsNullOrEmpty(Text))
             {
-                Text = "关闭";
+                Text = Program._localizer["Close"];
             }
-            Click = "ff.CloseDialog();";
+            Click = "ff.CloseDialog()";
+
+
+
             base.Process(context, output);
         }
     }

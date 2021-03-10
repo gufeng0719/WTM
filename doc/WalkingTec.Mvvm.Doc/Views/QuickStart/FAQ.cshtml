@@ -1,4 +1,5 @@
-﻿<style>
+@model WalkingTec.Mvvm.Core.BaseVM
+<style>
     a {
         color: #01aaed
     }
@@ -22,7 +23,7 @@
     <p>答：一般来说有以下几个原因：</p>
     <p>mysql版本过低，请至少使用5.7以上的</p>
     <p>mysql默认字符集不是utf8，不支持中文</p>
-    <p>appsettings中连接字符串写的不对,一般标准格式是类似这种 Server=127.0.0.1;Database=dbname;port=3306;uid=root;password=12345</p>
+    <p>appsettings中连接字符串写的不对,一般标准格式是类似这种 Server=127.0.0.1; Database=dbname;port=3306; uid=root; password=12345</p>
     <p>appsettings中的DBType要写成mysql</p>
 </wt:quote>
 
@@ -43,3 +44,6 @@
     <p>问：为什么我添加了新model，但是数据库中没有新的表</p>
     <p>答：EF目前不支持自动更新数据库，关于同步数据库的几种方法，请参考<a href="/#/Data/Migration">这里</a></p>
 </wt:quote>
+<script>
+  $("#@Model.ViewDivId").parent().css("height", "auto");
+</script>

@@ -1,6 +1,4 @@
-﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using WalkingTec.Mvvm.Core;
 using WalkingTec.Mvvm.Core.Extensions;
@@ -28,7 +26,6 @@ namespace WalkingTec.Mvvm.Mvc.Admin.ViewModels.FrameworkMenuVMs
                         this.MakeGridHeader(x => x.IsPublic, 60),
                         this.MakeGridHeader(x => x.DisplayOrder, 60),
                         this.MakeGridHeader(x => x.ICon, 100),
-                        this.MakeGridHeader(x => x.CustomICon, 100),
                         this.MakeGridHeader(x => x.Children, 100),
                         this.MakeGridHeader(x=>x.ParentID).SetHide(),
                         this.MakeGridHeaderAction(width: 290)
@@ -43,6 +40,32 @@ namespace WalkingTec.Mvvm.Mvc.Admin.ViewModels.FrameworkMenuVMs
         {
             var data = DC.Set<FrameworkMenu>().ToList();
             var topdata = data.Where(x => x.ParentId == null).ToList().FlatTree(x => x.DisplayOrder).Where(x => x.IsInside == false || x.FolderOnly == true || string.IsNullOrEmpty(x.MethodName)).ToList();
+            foreach (var item in topdata)
+            {
+                if (item.PageName?.StartsWith("MenuKey.") == true)
+                {
+                    if (Core.Program._Callerlocalizer[item.PageName].ResourceNotFound == true)
+                    {
+                        item.PageName = Core.Program._localizer[item.PageName];
+                    }
+                    else
+                    {
+                        item.PageName = Core.Program._Callerlocalizer[item.PageName];
+                    }
+                }
+                if (item.ModuleName?.StartsWith("MenuKey.") == true)
+                {
+                    if (Core.Program._Callerlocalizer[item.ModuleName].ResourceNotFound == true)
+                    {
+                        item.ModuleName = Core.Program._localizer[item.ModuleName];
+                    }
+                    else
+                    {
+                        item.ModuleName = Core.Program._Callerlocalizer[item.ModuleName];
+                    }
+                }
+
+            }
             int order = 0;
             var data2 = topdata.Select(x => new FrameworkMenu_ListView
             {
@@ -56,48 +79,14 @@ namespace WalkingTec.Mvvm.Mvc.Admin.ViewModels.FrameworkMenuVMs
                 DisplayOrder = x.DisplayOrder,
                 ExtraOrder = order++,
                 ParentID = x.ParentId,
-                ICon = x.IConId,
-                CustomICon = x.CustumIcon,
+                ICon = x.ICon,
                 HasChild = (x.Children != null && x.Children.Count() > 0) ? true : false
             }).OrderBy(x => x.ExtraOrder).ToList();
 
-            //foreach (var item in data2)
-            //{
-            //    if (item.ParentID != null)
-            //    {
-            //        var p = data2.Where(x => x.ID == item.ParentID).SingleOrDefault();
-            //        if (p != null)
-            //        {
-            //            if (p.Children == null)
-            //            {
-            //                p.Children = new List<FrameworkMenu_ListView>();
-            //            }
-            //            var t = p.Children.ToList();
-            //            t.Add(new FrameworkMenu_ListView
-            //                {
-            //                    ID = item.ID,
-            //                    PageName = item.PageName,
-            //                    ModuleName = item.ModuleName,
-            //                    ActionName = item.ActionName,
-            //                    ShowOnMenu = item.ShowOnMenu,
-            //                    FolderOnly = item.FolderOnly,
-            //                    IsPublic = item.IsPublic,
-            //                    DisplayOrder = item.DisplayOrder,
-            //                    ExtraOrder = order++,
-            //                    ParentID = item.ParentID,
-            //                    ICon = item.ICon,
-            //                    CustomICon = item.CustomICon,
-            //                    HasChild = (item.Children != null && item.Children.Count() > 0) ? true : false
-            //                }
-            //            );
-            //            p.Children = t;
-            //        }
-            //    }
-            //}
-            //var toremove = data2.Where(x => x.ParentID != null).ToList();
-            //toremove.ForEach(x => data2.Remove(x));d
             return data2.AsQueryable() as IOrderedQueryable<FrameworkMenu_ListView>;
         }
+
+
 
     }
 

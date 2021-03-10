@@ -1,5 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
 using WalkingTec.Mvvm.Core;
 using WalkingTec.Mvvm.Core.Extensions;
 
@@ -27,7 +28,7 @@ namespace WalkingTec.Mvvm.Mvc
                 Type modeltype = Type.GetType(vm.SelectedModel);
                 if(modeltype.IsSubclassOf(typeof(TopBasePoco)) == false)
                 {
-                    ModelState.AddModelError("SelectedModel", "所选模型必须继承TopBasePoco基类");
+                    ModelState.AddModelError("SelectedModel", Program._localizer["SelectedModelMustBeBasePoco"]);
                 }
             }
             if (!ModelState.IsValid)
@@ -55,7 +56,7 @@ namespace WalkingTec.Mvvm.Mvc
         public IActionResult DoGen(CodeGenVM vm)
         {
             vm.DoGen();
-            return FFResult().CloseDialog().Alert("生成成功！");
+            return FFResult().Alert(Program._localizer["CodeGenSuccess"]);
         }
 
         [ActionDescription("预览")]
@@ -64,12 +65,12 @@ namespace WalkingTec.Mvvm.Mvc
         {
             if (vm.PreviewFile == "Controller")
             {
-                ViewData["filename"] = vm.ModelName + "Controller.cs";
+                ViewData["filename"] = $"{vm.ModelName}{(vm.IsApi == true ? "Api" : "")}Controller.cs";
                 ViewData["code"] = vm.GenerateController();
             }
             else if(vm.PreviewFile == "Searcher" || vm.PreviewFile.EndsWith("VM"))
             {
-                ViewData["filename"] = vm.ModelName + vm.PreviewFile.Replace("CrudVM","VM") + ".cs";
+                ViewData["filename"] = vm.ModelName + $"{(vm.IsApi == true ? "Api" : "")}" + vm.PreviewFile.Replace("CrudVM","VM") + ".cs";
                 ViewData["code"] = vm.GenerateVM(vm.PreviewFile);
             }
             else if(vm.UI == UIEnum.React)
@@ -91,6 +92,11 @@ namespace WalkingTec.Mvvm.Mvc
                     ViewData["code"] = vm.GenerateReactView(vm.PreviewFile);
                 }
 
+            }
+            else if(vm.UI == UIEnum.VUE)
+            {
+                List<string> apineeded = new List<string>();
+                ViewData["code"] = vm.GenerateVUEView(vm.PreviewFile,apineeded);
             }
             else if (vm.PreviewFile.EndsWith("View"))
             {
